@@ -1,16 +1,13 @@
 import React, { createContext, useCallback, useEffect, useMemo, useReducer } from 'react';
 import { toast } from 'react-hot-toast';
-import { loginExchange, employeeLogin, sessionValidate, getMe } from '../api/auth';
-import { myPermissionsGet } from '../api/admin';
+import { login, me as apiMe } from '../api/auth';
 import {
   clearMeCache,
   clearPermissionsCache,
   clearSessionToken,
   loadMeCache,
-  loadPermissionsCache,
   loadSessionToken,
   saveMeCache,
-  savePermissionsCache,
   saveSessionToken,
 } from '../utils/storage';
 
@@ -75,66 +72,25 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'LOGOUT' });
   }, []);
 
-  const refreshMe = useCallback(
-    async (token) => {
-      const meRes = await getMe(token);
-      return meRes.me;
-    },
-    []
-  );
-
-  const refreshPermissions = useCallback(async (token) => {
-    try {
-      const res = await myPermissionsGet(token);
-      return res;
-    } catch (e) {
-      return null;
-    }
+  const refreshMe = useCallback(async (token) => {
+    return await apiMe(token);
   }, []);
 
-  const loginWithGoogleIdToken = useCallback(
-    async (idToken) => {
-      const data = await loginExchange(idToken);
-      const token = data.sessionToken;
-      if (!token) {
-        throw new Error('Backend did not return sessionToken');
-      }
+  const loginWithPassword = useCallback(
+    async (email, password) => {
+      const data = await login(email, password);
+      const token = data?.access_token;
+      if (!token) throw new Error('Backend did not return access_token');
 
       saveSessionToken(token);
-      const me = data.me ?? (await refreshMe(token));
+      const profile = data?.user ?? (await refreshMe(token));
 
-      // Permissions are best-effort: keep legacy role-based fallbacks if unavailable.
-      const permissions = await refreshPermissions(token);
-
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { token, me, permissions } });
-      saveMeCache(me);
-      if (permissions) savePermissionsCache(permissions);
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { token, me: profile, permissions: null } });
+      saveMeCache(profile);
       toast.success('Signed in');
-      return { token, me };
+      return { token, me: profile };
     },
-    [refreshMe, refreshPermissions]
-  );
-
-  const loginWithEmployeeId = useCallback(
-    async (employeeId) => {
-      const data = await employeeLogin(employeeId);
-      const token = data.sessionToken;
-      if (!token) {
-        throw new Error('Backend did not return sessionToken');
-      }
-
-      saveSessionToken(token);
-      const me = data.me ?? (await refreshMe(token));
-
-      const permissions = await refreshPermissions(token);
-
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { token, me, permissions } });
-      saveMeCache(me);
-      if (permissions) savePermissionsCache(permissions);
-      toast.success('Signed in');
-      return { token, me };
-    },
-    [refreshMe, refreshPermissions]
+    [refreshMe]
   );
 
   useEffect(() => {
@@ -149,30 +105,19 @@ export function AuthProvider({ children }) {
 
       // Fast-path: render app immediately with cached profile/permissions (if available).
       const cachedMe = loadMeCache();
-      const cachedPermissions = loadPermissionsCache();
       if (!cancelled) {
         dispatch({
           type: 'INIT_DONE',
-          payload: { token, me: cachedMe ?? null, permissions: cachedPermissions ?? null },
+          payload: { token, me: cachedMe ?? null, permissions: null },
         });
       }
 
       try {
-        const v = await sessionValidate(token);
-        if (!v.valid) {
-          clearSessionToken();
-          clearMeCache();
-          clearPermissionsCache();
-          if (!cancelled) dispatch({ type: 'INIT_DONE', payload: { token: null, me: null } });
-          return;
-        }
-
-        const [me, permissions] = await Promise.all([refreshMe(token), refreshPermissions(token)]);
+        const me = await refreshMe(token);
         if (cancelled) return;
 
-        dispatch({ type: 'SESSION_REFRESH', payload: { me, permissions } });
+        dispatch({ type: 'SESSION_REFRESH', payload: { me, permissions: null } });
         if (me) saveMeCache(me);
-        if (permissions) savePermissionsCache(permissions);
       } catch (e) {
         clearSessionToken();
         clearMeCache();
@@ -185,7 +130,7 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshMe, refreshPermissions]);
+  }, [refreshMe]);
 
   const role = normalizeRole_(state.me?.role);
   const legacyRole = legacyRole_(state.me?.role);
@@ -217,11 +162,10 @@ export function AuthProvider({ children }) {
         return actionSet.has(String(key || '').toUpperCase());
       },
 
-      loginWithGoogleIdToken,
-      loginWithEmployeeId,
+      loginWithPassword,
       logout,
     }),
-    [state, role, legacyRole, uiSet, actionSet, loginWithGoogleIdToken, loginWithEmployeeId, logout]
+    [state, role, legacyRole, uiSet, actionSet, loginWithPassword, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

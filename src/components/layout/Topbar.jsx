@@ -43,8 +43,8 @@ export function Topbar({ onToggleCollapsed }) {
         <div className="spacer" />
 
         <div className="row" style={{ gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-            Dashboard
+          <Button variant="ghost" size="sm" onClick={() => navigate('/reports')}>
+            Reports
           </Button>
           <Badge variant="blue">{effectiveRole}</Badge>
           <div className="topbar-user">
@@ -59,4 +59,3 @@ export function Topbar({ onToggleCollapsed }) {
     </header>
   );
 }
-

@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'ntw_hrms_session_token';
+const TOKEN_KEY = 'ntw_hrms_access_token_v1';
 const REJECT_REVERT_DRAFT_KEY = 'ntw_hrms_reject_revert_draft_v1';
 const ME_CACHE_KEY = 'ntw_hrms_me_cache_v1';
 const PERMISSIONS_CACHE_KEY = 'ntw_hrms_permissions_cache_v1';
@@ -26,6 +26,11 @@ export function clearSessionToken() {
     // ignore
   }
 }
+
+// New explicit names (JWT access token).
+export const loadAccessToken = loadSessionToken;
+export const saveAccessToken = saveSessionToken;
+export const clearAccessToken = clearSessionToken;
 
 export function loadMeCache() {
   try {
