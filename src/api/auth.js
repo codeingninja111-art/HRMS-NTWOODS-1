@@ -1,10 +1,17 @@
-import { apiGet, apiPost } from './restClient';
+import { apiPost } from './client';
 
-export function login(email, password) {
-  return apiPost('/api/v1/auth/login', { email, password });
+export function loginExchange(idToken) {
+  return apiPost('LOGIN_EXCHANGE', { idToken }, null);
 }
 
-export function me(token) {
-  return apiGet('/api/v1/auth/me', { token });
+export function employeeLogin(employeeId) {
+  return apiPost('EMPLOYEE_LOGIN', { employeeId }, null);
 }
 
+export function sessionValidate(token) {
+  return apiPost('SESSION_VALIDATE', {}, token);
+}
+
+export function getMe(token) {
+  return apiPost('GET_ME', {}, token);
+}
