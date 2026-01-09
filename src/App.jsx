@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Toasts } from './components/ui/Toasts';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -57,7 +57,7 @@ function RouteFallback() {
 
 export function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Toasts />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -215,6 +215,6 @@ export function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </HashRouter>
+    </BrowserRouter>
   );
 }

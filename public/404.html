@@ -4,12 +4,13 @@
     <meta charset="utf-8" />
     <meta http-equiv="refresh" content="0; url=./" />
     <script>
-      // SPA fallback for GitHub Pages.
-      // Redirects unknown routes back to index.html.
+      // SPA fallback for static hosts (e.g. GitHub Pages) without server-side rewrites.
+      // Store the attempted path, then redirect back to the app base URL (no hash).
       (function () {
         var l = window.location;
-        var path = l.pathname + l.search + l.hash;
-        l.replace(l.origin + l.pathname.replace(/\/[^/]*$/, '/') + '#' + path);
+        var base = l.pathname.replace(/\/[^/]*$/, '/');
+        sessionStorage.setItem('spa:redirect', l.pathname + l.search);
+        l.replace(l.origin + base);
       })();
     </script>
   </head>
